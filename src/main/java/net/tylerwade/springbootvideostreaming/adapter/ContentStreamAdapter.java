@@ -35,4 +35,10 @@ public interface ContentStreamAdapter {
 		return new Range(start, end);
 	}
 
+	default String extractContentType(String fileName) {
+		return fileName.contains(".")
+				? "video/" + fileName.substring(fileName.lastIndexOf(".") + 1)
+				: "application/octet-stream";
+	}
+
 }

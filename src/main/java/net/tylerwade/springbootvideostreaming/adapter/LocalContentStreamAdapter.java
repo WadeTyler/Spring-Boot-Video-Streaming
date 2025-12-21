@@ -137,9 +137,4 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 		return resource;
 	}
 
-	private String extractContentType(String fileName) {
-		return fileName.contains(".")
-				? "video/" + fileName.substring(fileName.lastIndexOf(".") + 1)
-				: "application/octet-stream";
-	}
 }
