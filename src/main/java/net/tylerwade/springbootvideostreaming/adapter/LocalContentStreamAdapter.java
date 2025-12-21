@@ -40,7 +40,7 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 
 		String contentType = extractContentType(contentRequest.getKey());
 		Long fileSize = resource.contentLength();
-		Range validRange = validateRange(contentRequest.getRange(), fileSize);
+		Range validRange = createValidRange(contentRequest.getRange(), fileSize);
 
 		Long contentLength = validRange.getEnd() - validRange.getStart() + 1;
 
@@ -59,21 +59,6 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 				.contentLength(contentLength)
 				.range(validRange)
 				.build();
-	}
-
-	private Range validateRange(Range requestedRange, Long fileSize) {
-		if (requestedRange == null) {
-			requestedRange = new Range(0L, fileSize - 1L);
-		}
-
-		Long start = requestedRange.getStart() == null ? 0L : requestedRange.getStart();
-		Long end = requestedRange.getEnd();
-
-		if (end == null || end - start + 1 > MAX_CHUNK_SIZE) {
-			end = Math.min(start + MAX_CHUNK_SIZE - 1, fileSize - 1);
-		}
-
-		return new Range(start, end);
 	}
 
 	private StreamingResponseBody readContent(Resource videoResource, Long start, Long end, Long contentLength) {
@@ -157,6 +142,4 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 				? "video/" + fileName.substring(fileName.lastIndexOf(".") + 1)
 				: "application/octet-stream";
 	}
-
-
 }
