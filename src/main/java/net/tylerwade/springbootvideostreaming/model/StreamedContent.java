@@ -24,4 +24,6 @@ public class StreamedContent {
 
 	private Long contentLength;
 
+	private Range range;
+
 }

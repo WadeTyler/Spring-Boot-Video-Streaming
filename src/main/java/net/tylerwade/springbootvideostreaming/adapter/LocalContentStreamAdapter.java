@@ -50,7 +50,6 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 				.key(resource.getFilename())
 				.contentType(contentType)
 				.fileSize(fileSize)
-				.range(validRange)
 				.build();
 
 		return StreamedContent.builder()
@@ -58,6 +57,7 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 				.metadata(metadata)
 				.content(content)
 				.contentLength(contentLength)
+				.range(validRange)
 				.build();
 	}
 
@@ -110,7 +110,11 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 		long fileSize = resource.contentLength();
 		Range range = new Range(0L, fileSize - 1L);
 
-		return new StreamedContentMetadata(key, contentType, fileSize, range);
+		return StreamedContentMetadata.builder()
+				.key(key)
+				.contentType(contentType)
+				.fileSize(fileSize)
+				.build();
 	}
 
 	@Override
@@ -124,11 +128,15 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 			String fileName = resource.getFilename();
 			long contentLength = resource.contentLength();
 
-			StreamedContentMetadata metadata = new StreamedContentMetadata(
-					fileName,
-					extractContentType(fileName),
-					contentLength,
-					new Range(0L, contentLength - 1));
+			if (fileName == null) {
+				continue;
+			}
+
+			StreamedContentMetadata metadata = StreamedContentMetadata.builder()
+					.key(fileName)
+					.contentType(extractContentType(fileName))
+					.fileSize(contentLength)
+					.build();
 
 			metadataList.add(metadata);
 		}

@@ -49,7 +49,6 @@ public class LocalContentStreamAdapterTests {
 					assertThat(metadata.getKey()).isEqualTo(earthSpinningVideoKey);
 					assertThat(metadata.getContentType()).isEqualTo(earthSpinningContentType);
 					assertThat(metadata.getFileSize()).isEqualTo(earthSpinningFileSize);
-					assertThat(metadata.getRange()).isEqualTo(new Range(0L, earthSpinningFileSize - 1));
 				});
 	}
 
@@ -61,7 +60,6 @@ public class LocalContentStreamAdapterTests {
 		assertEquals(earthSpinningVideoKey, metadata.getKey());
 		assertEquals(earthSpinningContentType, metadata.getContentType());
 		assertEquals(earthSpinningFileSize, metadata.getFileSize());
-		assertEquals(new Range(0L, metadata.getFileSize() - 1), metadata.getRange());
 	}
 
 	@Test
@@ -106,7 +104,7 @@ public class LocalContentStreamAdapterTests {
 		assertEquals(earthSpinningVideoKey, content.getMetadata().getKey());
 		assertEquals(earthSpinningContentType, content.getMetadata().getContentType());
 		assertEquals(earthSpinningFileSize, content.getMetadata().getFileSize());
-		assertEquals(range, content.getMetadata().getRange());
+		assertEquals(range, content.getRange());
 		assertNotNull(content.getContent());
 		assertEquals(range.getEnd() - range.getStart() + 1, content.getContentLength());
 	}

@@ -11,6 +11,5 @@ public class StreamedContentMetadata {
 	private String key;
 	private String contentType;
 	private Long fileSize;
-	private Range range;
 
 }
