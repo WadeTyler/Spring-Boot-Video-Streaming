@@ -65,14 +65,13 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 			try (InputStream is = videoResource.getInputStream()) {
 				is.skipNBytes(start);
 
-				byte[] buffer = new byte[8192]; // 8KB internal buffer
-				long totalRead = 0;
+				byte[] buffer = new byte[8192];
+				long remaining = contentLength;
 				int read;
 
-				while (totalRead < contentLength
-						&& (read = is.read(buffer, 0, (int) Math.min(buffer.length, contentLength - totalRead))) != -1) {
+				while (remaining > 0 && (read = is.read(buffer, 0, (int) Math.min(buffer.length, remaining))) != -1) {
 					outputStream.write(buffer, 0, read);
-					totalRead += read;
+					remaining -= read;
 				}
 				outputStream.flush();
 			}
