@@ -38,17 +38,16 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 	public StreamedContent loadContent(StreamContentRequest contentRequest) throws MissingResourceException, IOException {
 		Resource resource = loadResource(contentRequest.getKey());
 
-		String contentType = extractContentType(contentRequest.getKey());
 		Long fileSize = resource.contentLength();
 		Range validRange = createValidRange(contentRequest.getRange(), fileSize);
 
 		Long contentLength = validRange.getEnd() - validRange.getStart() + 1;
 
-		StreamingResponseBody content = readContent(resource, validRange.getStart(), validRange.getEnd(), contentLength);
+		StreamingResponseBody content = readContent(resource, validRange.getStart(), contentLength);
 
 		StreamedContentMetadata metadata = StreamedContentMetadata.builder()
 				.key(resource.getFilename())
-				.contentType(contentType)
+				.contentType(extractContentType(contentRequest.getKey()))
 				.fileSize(fileSize)
 				.build();
 
@@ -61,21 +60,19 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 				.build();
 	}
 
-	private StreamingResponseBody readContent(Resource videoResource, Long start, Long end, Long contentLength) {
+	private StreamingResponseBody readContent(Resource videoResource, Long start, Long contentLength) {
 		return outputStream -> {
 			try (InputStream is = videoResource.getInputStream()) {
-				long skipped = is.skip(start);
-				if (skipped < start) {
-					throw new IOException("Could not skip to desired start position.");
-				}
+				is.skipNBytes(start);
 
 				byte[] buffer = new byte[8192]; // 8KB internal buffer
-				long bytesToRead = contentLength;
+				long totalRead = 0;
 				int read;
 
-				while (bytesToRead > 0 && (read = is.read(buffer, 0, (int) Math.min(buffer.length, bytesToRead))) != -1) {
+				while (totalRead < contentLength
+						&& (read = is.read(buffer, 0, (int) Math.min(buffer.length, contentLength - totalRead))) != -1) {
 					outputStream.write(buffer, 0, read);
-					bytesToRead -= read;
+					totalRead += read;
 				}
 				outputStream.flush();
 			}
@@ -91,14 +88,10 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 	public StreamedContentMetadata getContentMetadata(String key) throws MissingResourceException, IOException {
 		Resource resource = loadResource(key);
 
-		String contentType = extractContentType(key);
-		long fileSize = resource.contentLength();
-		Range range = new Range(0L, fileSize - 1L);
-
 		return StreamedContentMetadata.builder()
 				.key(key)
-				.contentType(contentType)
-				.fileSize(fileSize)
+				.contentType(extractContentType(key))
+				.fileSize(resource.contentLength())
 				.build();
 	}
 
@@ -111,7 +104,6 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 		List<StreamedContentMetadata> metadataList = new ArrayList<>();
 		for (Resource resource : resources) {
 			String fileName = resource.getFilename();
-			long contentLength = resource.contentLength();
 
 			if (fileName == null) {
 				continue;
@@ -120,7 +112,7 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 			StreamedContentMetadata metadata = StreamedContentMetadata.builder()
 					.key(fileName)
 					.contentType(extractContentType(fileName))
-					.fileSize(contentLength)
+					.fileSize(resource.contentLength())
 					.build();
 
 			metadataList.add(metadata);
