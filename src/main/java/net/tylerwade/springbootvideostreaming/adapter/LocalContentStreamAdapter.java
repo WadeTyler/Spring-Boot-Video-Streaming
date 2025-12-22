@@ -15,6 +15,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.MissingResourceException;
 
+/**
+ * The {@code LocalContentStreamAdapter} class implements the {@code ContentStreamAdapter} interface
+ * and provides functionality to stream content from local resources. It retrieves video files or similar
+ * resources stored in a specified directory and enables chunk-based streaming, metadata retrieval,
+ * and content range validation.
+ * <p>
+ * This implementation uses a {@code ResourceLoader} to load resources and manages a directory of
+ * resources, defaulting to "classpath:videos" if no directory is specified.
+ */
 public class LocalContentStreamAdapter implements ContentStreamAdapter {
 
 	private final ResourceLoader resourceLoader;

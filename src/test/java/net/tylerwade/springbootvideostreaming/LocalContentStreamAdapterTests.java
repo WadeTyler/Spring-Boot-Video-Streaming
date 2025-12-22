@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.MissingResourceException;
 
+import static net.tylerwade.springbootvideostreaming.TestResources.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,10 +29,6 @@ public class LocalContentStreamAdapterTests {
 	private static final String VIDEOS_DIRECTORY = "videos";
 
 	private ContentStreamAdapter contentStreamAdapter;
-
-	private static final String earthSpinningVideoKey = "earth-spinning.mp4";
-	private static final String earthSpinningContentType = "video/mp4";
-	private static final Long earthSpinningFileSize = 873682L;
 
 	@BeforeEach
 	void setup() {
@@ -46,20 +43,20 @@ public class LocalContentStreamAdapterTests {
 		assertThat(metadataList)
 				.hasSize(3)
 				.anySatisfy(metadata -> {
-					assertThat(metadata.getKey()).isEqualTo(earthSpinningVideoKey);
-					assertThat(metadata.getContentType()).isEqualTo(earthSpinningContentType);
-					assertThat(metadata.getFileSize()).isEqualTo(earthSpinningFileSize);
+					assertThat(metadata.getKey()).isEqualTo(EARTH_SPINNING_VIDEO_KEY);
+					assertThat(metadata.getContentType()).isEqualTo(EARTH_SPINNING_CONTENT_TYPE);
+					assertThat(metadata.getFileSize()).isEqualTo(EARTH_SPINNING_FILE_SIZE);
 				});
 	}
 
 	@Test
 	void getContentMetadata_returnsMetadata() throws IOException {
-		StreamedContentMetadata metadata = contentStreamAdapter.getContentMetadata(earthSpinningVideoKey);
+		StreamedContentMetadata metadata = contentStreamAdapter.getContentMetadata(EARTH_SPINNING_VIDEO_KEY);
 
 		assertNotNull(metadata);
-		assertEquals(earthSpinningVideoKey, metadata.getKey());
-		assertEquals(earthSpinningContentType, metadata.getContentType());
-		assertEquals(earthSpinningFileSize, metadata.getFileSize());
+		assertEquals(EARTH_SPINNING_VIDEO_KEY, metadata.getKey());
+		assertEquals(EARTH_SPINNING_CONTENT_TYPE, metadata.getContentType());
+		assertEquals(EARTH_SPINNING_FILE_SIZE, metadata.getFileSize());
 	}
 
 	@Test
@@ -69,18 +66,18 @@ public class LocalContentStreamAdapterTests {
 
 	@Test
 	void getContentMetadata_defaultsContentType() throws IOException {
-		StreamedContentMetadata metadata = contentStreamAdapter.getContentMetadata("science-video");
+		StreamedContentMetadata metadata = contentStreamAdapter.getContentMetadata(SCIENCE_VIDEO_KEY);
 
 		assertNotNull(metadata);
-		assertEquals("science-video", metadata.getKey());
-		assertEquals("application/octet-stream", metadata.getContentType());
+		assertEquals(SCIENCE_VIDEO_KEY, metadata.getKey());
+		assertEquals(SCIENCE_CONTENT_TYPE, metadata.getContentType());
 	}
 
 	@Test
 	void getContentSize_returnsFileSize() throws IOException {
-		Long fileSize = contentStreamAdapter.getContentSize(earthSpinningVideoKey);
+		Long fileSize = contentStreamAdapter.getContentSize(EARTH_SPINNING_VIDEO_KEY);
 
-		assertEquals(earthSpinningFileSize, fileSize);
+		assertEquals(EARTH_SPINNING_FILE_SIZE, fileSize);
 	}
 
 	@Test
@@ -90,20 +87,20 @@ public class LocalContentStreamAdapterTests {
 
 	@Test
 	void loadContent_returnsContent() throws IOException {
-		Range range = new Range(0L, earthSpinningFileSize / 2);
+		Range range = new Range(0L, EARTH_SPINNING_FILE_SIZE / 2);
 		StreamContentRequest streamContentRequest = StreamContentRequest.builder()
-				.key(earthSpinningVideoKey)
+				.key(EARTH_SPINNING_VIDEO_KEY)
 				.range(range)
 				.build();
 
 		StreamedContent content = contentStreamAdapter.loadContent(streamContentRequest);
 
 		assertNotNull(content);
-		assertEquals(earthSpinningVideoKey, content.getKey());
+		assertEquals(EARTH_SPINNING_VIDEO_KEY, content.getKey());
 		assertNotNull(content.getMetadata());
-		assertEquals(earthSpinningVideoKey, content.getMetadata().getKey());
-		assertEquals(earthSpinningContentType, content.getMetadata().getContentType());
-		assertEquals(earthSpinningFileSize, content.getMetadata().getFileSize());
+		assertEquals(EARTH_SPINNING_VIDEO_KEY, content.getMetadata().getKey());
+		assertEquals(EARTH_SPINNING_CONTENT_TYPE, content.getMetadata().getContentType());
+		assertEquals(EARTH_SPINNING_FILE_SIZE, content.getMetadata().getFileSize());
 		assertEquals(range, content.getRange());
 		assertNotNull(content.getContent());
 		assertEquals(range.getEnd() - range.getStart() + 1, content.getContentLength());
@@ -116,7 +113,7 @@ public class LocalContentStreamAdapterTests {
 
 	@Test
 	void loadContent_returnsMaxChunkSize() throws IOException {
-		StreamContentRequest contentRequest = new StreamContentRequest("park.mp4", new Range(0L, null));
+		StreamContentRequest contentRequest = new StreamContentRequest(PARK_VIDEO_KEY, new Range(0L, null));
 		StreamedContent content = contentStreamAdapter.loadContent(contentRequest);
 
 		long MAX_CHUNK_SIZE = 1024 * 1024L; // 1 MB

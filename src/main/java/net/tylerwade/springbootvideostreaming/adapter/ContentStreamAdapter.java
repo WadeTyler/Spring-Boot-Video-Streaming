@@ -8,6 +8,14 @@ import net.tylerwade.springbootvideostreaming.model.StreamedContentMetadata;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * The {@code ContentStreamAdapter} interface defines the contract for implementing content streaming
+ * functionality. It provides methods for loading content in chunks, retrieving metadata, and performing
+ * content-based computations such as range validation and MIME type extraction.
+ * <p>
+ * If a ContentStreamAdapter bean is not manually created, then a {@link LocalContentStreamAdapter} will
+ * automatically be created by {@link net.tylerwade.springbootvideostreaming.config.AutoConfig}
+ */
 public interface ContentStreamAdapter {
 
 	long MAX_CHUNK_SIZE = 1024 * 1024L; // 1MB

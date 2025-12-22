@@ -18,12 +18,12 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
 import java.io.IOException;
 import java.util.List;
 
+import static net.tylerwade.springbootvideostreaming.TestResources.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -35,25 +35,6 @@ public class S3ContentStreamAdapterTests {
 	public S3Client s3Client;
 
 	private ContentStreamAdapter contentStreamAdapter;
-
-	private static final S3Object earthSpinningObject = S3Object.builder()
-			.key("earth-spinning.mp4")
-			.size(873682L)
-			.build();
-
-	private static final S3Object parkObject = S3Object.builder()
-			.key("park.mp4")
-			.size(21657943L)
-			.build();
-
-	private static final S3Object scienceVideoObject = S3Object.builder()
-			.key("science-video")
-			.size(13927646L)
-			.build();
-
-	private static final List<S3Object> mockS3Objects = List.of(
-			earthSpinningObject, parkObject, scienceVideoObject
-	);
 
 	@BeforeEach
 	void setup() {
@@ -69,7 +50,7 @@ public class S3ContentStreamAdapterTests {
 				.thenReturn(mockIterable);
 
 		when(mockIterable.contents())
-				.thenReturn(mockS3Objects::iterator);
+				.thenReturn(MOCK_S3_OBJECTS::iterator);
 
 		// Act
 		List<StreamedContentMetadata> metadataList = contentStreamAdapter.getAllContentMetadata();
@@ -78,19 +59,19 @@ public class S3ContentStreamAdapterTests {
 		assertThat(metadataList)
 				.hasSize(3)
 				.anySatisfy(metadata -> {
-					assertThat(metadata.getKey()).isEqualTo(earthSpinningObject.key());
-					assertThat(metadata.getContentType()).isEqualTo("video/mp4");
-					assertThat(metadata.getFileSize()).isEqualTo(earthSpinningObject.size());
+					assertThat(metadata.getKey()).isEqualTo(EARTH_SPINNING_S3_OBJECT.key());
+					assertThat(metadata.getContentType()).isEqualTo(EARTH_SPINNING_CONTENT_TYPE);
+					assertThat(metadata.getFileSize()).isEqualTo(EARTH_SPINNING_S3_OBJECT.size());
 				})
 				.anySatisfy(metadata -> {
-					assertThat(metadata.getKey()).isEqualTo(parkObject.key());
-					assertThat(metadata.getContentType()).isEqualTo("video/mp4");
-					assertThat(metadata.getFileSize()).isEqualTo(parkObject.size());
+					assertThat(metadata.getKey()).isEqualTo(PARK_S3_OBJECT.key());
+					assertThat(metadata.getContentType()).isEqualTo(PARK_CONTENT_TYPE);
+					assertThat(metadata.getFileSize()).isEqualTo(PARK_S3_OBJECT.size());
 				})
 				.anySatisfy(metadata -> {
-					assertThat(metadata.getKey()).isEqualTo(scienceVideoObject.key());
-					assertThat(metadata.getContentType()).isEqualTo("application/octet-stream");
-					assertThat(metadata.getFileSize()).isEqualTo(scienceVideoObject.size());
+					assertThat(metadata.getKey()).isEqualTo(SCIENCE_S3_OBJECT.key());
+					assertThat(metadata.getContentType()).isEqualTo(SCIENCE_CONTENT_TYPE);
+					assertThat(metadata.getFileSize()).isEqualTo(SCIENCE_S3_OBJECT.size());
 				});
 	}
 
@@ -109,18 +90,18 @@ public class S3ContentStreamAdapterTests {
 		// Arrange
 		when(s3Client.headObject(any(HeadObjectRequest.class)))
 				.thenReturn(HeadObjectResponse.builder()
-								.contentType("video/mp4")
-								.contentLength(earthSpinningObject.size())
+								.contentType(EARTH_SPINNING_CONTENT_TYPE)
+								.contentLength(EARTH_SPINNING_S3_OBJECT.size())
 								.build());
 
 		// Act
-		StreamedContentMetadata metadata = contentStreamAdapter.getContentMetadata(earthSpinningObject.key());
+		StreamedContentMetadata metadata = contentStreamAdapter.getContentMetadata(EARTH_SPINNING_S3_OBJECT.key());
 
 		// Assert
 		assertNotNull(metadata);
-		assertEquals(earthSpinningObject.key(), metadata.getKey());
-		assertEquals("video/mp4", metadata.getContentType());
-		assertEquals(earthSpinningObject.size(), metadata.getFileSize());
+		assertEquals(EARTH_SPINNING_S3_OBJECT.key(), metadata.getKey());
+		assertEquals(EARTH_SPINNING_CONTENT_TYPE, metadata.getContentType());
+		assertEquals(EARTH_SPINNING_S3_OBJECT.size(), metadata.getFileSize());
 	}
 
 	@Test
@@ -138,16 +119,16 @@ public class S3ContentStreamAdapterTests {
 		// Arrange
 		when(s3Client.headObject(any(HeadObjectRequest.class)))
 				.thenReturn(HeadObjectResponse.builder()
-						.contentType("video/mp4")
-						.contentLength(earthSpinningObject.size())
+						.contentType(EARTH_SPINNING_CONTENT_TYPE)
+						.contentLength(EARTH_SPINNING_S3_OBJECT.size())
 						.build());
 
 		// Act
-		Long size = contentStreamAdapter.getContentSize(earthSpinningObject.key());
+		Long size = contentStreamAdapter.getContentSize(EARTH_SPINNING_S3_OBJECT.key());
 
 		// Assert
 		assertNotNull(size);
-		assertEquals(earthSpinningObject.size(), size);
+		assertEquals(EARTH_SPINNING_S3_OBJECT.size(), size);
 	}
 
 
@@ -166,13 +147,13 @@ public class S3ContentStreamAdapterTests {
 		// Arrange
 		when(s3Client.headObject(any(HeadObjectRequest.class)))
 				.thenReturn(HeadObjectResponse.builder()
-						.contentType("video/mp4")
-						.contentLength(earthSpinningObject.size())
+						.contentType(EARTH_SPINNING_CONTENT_TYPE)
+						.contentLength(EARTH_SPINNING_S3_OBJECT.size())
 						.build());
 
 		StreamContentRequest request = StreamContentRequest.builder()
-				.key(earthSpinningObject.key())
-				.range(new Range(0L, earthSpinningObject.size() / 2)) // Half the file size
+				.key(EARTH_SPINNING_S3_OBJECT.key())
+				.range(new Range(0L, EARTH_SPINNING_S3_OBJECT.size() / 2)) // Half the file size
 				.build();
 
 		when(s3Client.getObject(any(GetObjectRequest.class)))
@@ -183,13 +164,13 @@ public class S3ContentStreamAdapterTests {
 
 		// Assert
 		assertNotNull(content);
-		assertEquals(earthSpinningObject.key(), content.getKey());
+		assertEquals(EARTH_SPINNING_S3_OBJECT.key(), content.getKey());
 		assertNotNull(content.getMetadata());
-		assertEquals(earthSpinningObject.key(), content.getMetadata().getKey());
-		assertEquals("video/mp4", content.getMetadata().getContentType());
-		assertEquals(earthSpinningObject.size(), content.getMetadata().getFileSize());
+		assertEquals(EARTH_SPINNING_S3_OBJECT.key(), content.getMetadata().getKey());
+		assertEquals(EARTH_SPINNING_CONTENT_TYPE, content.getMetadata().getContentType());
+		assertEquals(EARTH_SPINNING_S3_OBJECT.size(), content.getMetadata().getFileSize());
 		assertNotNull(content.getContent());
-		assertEquals(earthSpinningObject.size() / 2 + 1, content.getContentLength());
+		assertEquals(EARTH_SPINNING_S3_OBJECT.size() / 2 + 1, content.getContentLength());
 	}
 
 	@Test
