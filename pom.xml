@@ -10,7 +10,7 @@
     </parent>
     <groupId>net.tylerwade</groupId>
     <artifactId>spring-boot-video-streaming</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>spring-boot-video-streaming</name>
     <description>spring-boot-video-streaming</description>
     <url/>
@@ -90,6 +90,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <skip>true</skip>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
