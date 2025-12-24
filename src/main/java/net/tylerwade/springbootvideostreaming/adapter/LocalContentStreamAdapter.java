@@ -6,11 +6,15 @@ import net.tylerwade.springbootvideostreaming.model.StreamedContent;
 import net.tylerwade.springbootvideostreaming.model.StreamedContentMetadata;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.MissingResourceException;
@@ -44,47 +48,41 @@ public class LocalContentStreamAdapter implements ContentStreamAdapter {
 	}
 
 	@Override
-	public StreamedContent loadContent(StreamContentRequest contentRequest) throws MissingResourceException, IOException {
-		Resource resource = loadResource(contentRequest.getKey());
+	public Mono<StreamedContent> loadContent(StreamContentRequest contentRequest) throws MissingResourceException {
+		return Mono.fromCallable(() -> loadResource(contentRequest.getKey()))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(resource -> {
+					return Mono.fromCallable(resource::contentLength)
+							.subscribeOn(Schedulers.boundedElastic())
+							.map(fileSize -> {
+								Range validRange = createValidRange(contentRequest.getRange(), fileSize);
+								Long contentLength = validRange.getEnd() - validRange.getStart() + 1;
 
-		Long fileSize = resource.contentLength();
-		Range validRange = createValidRange(contentRequest.getRange(), fileSize);
+								Flux<DataBuffer> content = readContent(resource, validRange.getStart(), contentLength);
 
-		Long contentLength = validRange.getEnd() - validRange.getStart() + 1;
+								StreamedContentMetadata metadata = StreamedContentMetadata.builder()
+										.key(resource.getFilename())
+										.contentType(extractContentType(contentRequest.getKey()))
+										.fileSize(fileSize)
+										.build();
 
-		StreamingResponseBody content = readContent(resource, validRange.getStart(), contentLength);
-
-		StreamedContentMetadata metadata = StreamedContentMetadata.builder()
-				.key(resource.getFilename())
-				.contentType(extractContentType(contentRequest.getKey()))
-				.fileSize(fileSize)
-				.build();
-
-		return StreamedContent.builder()
-				.key(resource.getFilename())
-				.metadata(metadata)
-				.content(content)
-				.contentLength(contentLength)
-				.range(validRange)
-				.build();
+								return StreamedContent.builder()
+										.key(resource.getFilename())
+										.metadata(metadata)
+										.content(content)
+										.contentLength(contentLength)
+										.range(validRange)
+										.build();
+							});
+				});
 	}
 
-	private StreamingResponseBody readContent(Resource videoResource, Long start, Long contentLength) {
-		return outputStream -> {
-			try (InputStream is = videoResource.getInputStream()) {
-				is.skipNBytes(start);
-
-				byte[] buffer = new byte[8192];
-				long remaining = contentLength;
-				int read;
-
-				while (remaining > 0 && (read = is.read(buffer, 0, (int) Math.min(buffer.length, remaining))) != -1) {
-					outputStream.write(buffer, 0, read);
-					remaining -= read;
-				}
-				outputStream.flush();
-			}
-		};
+	private Flux<DataBuffer> readContent(Resource videoResource, Long start, Long contentLength) {
+		return DataBufferUtils.read(videoResource,
+				start,
+				new DefaultDataBufferFactory(),
+				8192 // 8 KB
+		).take(contentLength);
 	}
 
 	@Override

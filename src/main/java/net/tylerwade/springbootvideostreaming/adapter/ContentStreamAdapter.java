@@ -4,6 +4,7 @@ import net.tylerwade.springbootvideostreaming.model.Range;
 import net.tylerwade.springbootvideostreaming.model.StreamContentRequest;
 import net.tylerwade.springbootvideostreaming.model.StreamedContent;
 import net.tylerwade.springbootvideostreaming.model.StreamedContentMetadata;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.List;
@@ -28,9 +29,8 @@ public interface ContentStreamAdapter {
 	 *                       and the range of bytes to be streamed.
 	 * @return a {@code StreamedContent} object containing the requested content segment,
 	 *         its metadata, and details about the range and content length.
-	 * @throws IOException if an error occurs while accessing or reading the resource.
 	 */
-	StreamedContent loadContent(StreamContentRequest contentRequest) throws IOException;
+	Mono<StreamedContent> loadContent(StreamContentRequest contentRequest);
 
 	/**
 	 * Retrieves the size of the content associated with the specified key.
@@ -96,4 +96,8 @@ public interface ContentStreamAdapter {
 				: "application/octet-stream";
 	}
 
+
+	default long getMaxChunkSize() {
+		return MAX_CHUNK_SIZE;
+	}
 }

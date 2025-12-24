@@ -7,8 +7,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import reactor.core.publisher.Flux;
+
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -22,7 +24,7 @@ public class StreamedContent {
 
 	private StreamedContentMetadata metadata;
 
-	private StreamingResponseBody content;
+	private Flux<DataBuffer> content;
 
 	private Long contentLength;
 
@@ -32,7 +34,7 @@ public class StreamedContent {
 	 * Converts the {@code StreamedContent} object into a {@code ResponseEntity} object.
 	 */
 	@JsonIgnore
-	public ResponseEntity<StreamingResponseBody> toResponseEntity() {
+	public ResponseEntity<Flux<DataBuffer>> toResponseEntity() {
 		boolean isCompleteContent = range.getStart() == 0 && range.getEnd() == metadata.getFileSize() - 1;
 
 		return ResponseEntity.status(isCompleteContent ? 200 : 206)

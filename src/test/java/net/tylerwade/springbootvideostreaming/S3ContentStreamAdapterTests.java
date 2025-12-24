@@ -4,13 +4,13 @@ import net.tylerwade.springbootvideostreaming.adapter.ContentStreamAdapter;
 import net.tylerwade.springbootvideostreaming.adapter.S3ContentStreamAdapter;
 import net.tylerwade.springbootvideostreaming.model.Range;
 import net.tylerwade.springbootvideostreaming.model.StreamContentRequest;
-import net.tylerwade.springbootvideostreaming.model.StreamedContent;
 import net.tylerwade.springbootvideostreaming.model.StreamedContentMetadata;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import reactor.test.StepVerifier;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -76,13 +76,13 @@ public class S3ContentStreamAdapterTests {
 	}
 
 	@Test
-	void getAllContentMetadata_throwsIoException() {
+	void getAllContentMetadata_throwsSdkException() {
 		// Arrange
 		when(s3Client.listObjectsV2Paginator(any(ListObjectsV2Request.class)))
 				.thenThrow(SdkException.builder().message("Service not available.").build());
 
 		// Act & Assert
-		assertThrows(IOException.class, () -> contentStreamAdapter.getAllContentMetadata());
+		assertThrows(SdkException.class, () -> contentStreamAdapter.getAllContentMetadata());
 	}
 
 	@Test
@@ -111,7 +111,7 @@ public class S3ContentStreamAdapterTests {
 				.thenThrow(SdkException.builder().message("Object not found.").build());
 
 		// Act & Assert
-		assertThrows(IOException.class, () -> contentStreamAdapter.getContentMetadata("missing-video.mp4"));
+		assertThrows(SdkException.class, () -> contentStreamAdapter.getContentMetadata("missing-video.mp4"));
 	}
 
 	@Test
@@ -139,11 +139,11 @@ public class S3ContentStreamAdapterTests {
 				.thenThrow(SdkException.builder().message("Object not found.").build());
 
 		// Act & Assert
-		assertThrows(IOException.class, () -> contentStreamAdapter.getContentMetadata("missing-video.mp4"));
+		assertThrows(SdkException.class, () -> contentStreamAdapter.getContentMetadata("missing-video.mp4"));
 	}
 
 	@Test
-	void loadContent_returnsContent() throws IOException {
+	void loadContent_returnsContent() {
 		// Arrange
 		when(s3Client.headObject(any(HeadObjectRequest.class)))
 				.thenReturn(HeadObjectResponse.builder()
@@ -159,28 +159,31 @@ public class S3ContentStreamAdapterTests {
 		when(s3Client.getObject(any(GetObjectRequest.class)))
 				.thenReturn(mock(ResponseInputStream.class));
 
-		// Act
-		StreamedContent content = contentStreamAdapter.loadContent(request);
-
-		// Assert
-		assertNotNull(content);
-		assertEquals(EARTH_SPINNING_S3_OBJECT.key(), content.getKey());
-		assertNotNull(content.getMetadata());
-		assertEquals(EARTH_SPINNING_S3_OBJECT.key(), content.getMetadata().getKey());
-		assertEquals(EARTH_SPINNING_CONTENT_TYPE, content.getMetadata().getContentType());
-		assertEquals(EARTH_SPINNING_S3_OBJECT.size(), content.getMetadata().getFileSize());
-		assertNotNull(content.getContent());
-		assertEquals(EARTH_SPINNING_S3_OBJECT.size() / 2 + 1, content.getContentLength());
+		// Act & Assert
+	 	StepVerifier.create(contentStreamAdapter.loadContent(request))
+				.assertNext(content -> {
+					assertNotNull(content);
+					assertEquals(EARTH_SPINNING_S3_OBJECT.key(), content.getKey());
+					assertNotNull(content.getMetadata());
+					assertEquals(EARTH_SPINNING_S3_OBJECT.key(), content.getMetadata().getKey());
+					assertEquals(EARTH_SPINNING_CONTENT_TYPE, content.getMetadata().getContentType());
+					assertEquals(EARTH_SPINNING_S3_OBJECT.size(), content.getMetadata().getFileSize());
+					assertNotNull(content.getContent());
+					assertEquals(EARTH_SPINNING_S3_OBJECT.size() / 2 + 1, content.getContentLength());
+				}).verifyComplete();
 	}
 
 	@Test
-	void loadContent_throwsIoException() {
+	void loadContent_throwsException() {
 		// Arrange
 		when(s3Client.headObject(any(HeadObjectRequest.class)))
 				.thenThrow(SdkException.builder().message("Object not found.").build());
 
 		// Act & Assert
-		assertThrows(IOException.class, () -> contentStreamAdapter.loadContent(StreamContentRequest.builder().key("missing-video.mp4").build()));
+		StreamContentRequest request = StreamContentRequest.builder().key("missing-video.mp4").build();
+		StepVerifier.create(contentStreamAdapter.loadContent(request))
+				.expectError(SdkException.class)
+				.verify();
 	}
 
 }

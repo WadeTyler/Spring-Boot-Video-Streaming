@@ -4,13 +4,13 @@ import net.tylerwade.springbootvideostreaming.adapter.ContentStreamAdapter;
 import net.tylerwade.springbootvideostreaming.adapter.LocalContentStreamAdapter;
 import net.tylerwade.springbootvideostreaming.model.Range;
 import net.tylerwade.springbootvideostreaming.model.StreamContentRequest;
-import net.tylerwade.springbootvideostreaming.model.StreamedContent;
 import net.tylerwade.springbootvideostreaming.model.StreamedContentMetadata;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ResourceLoader;
+import reactor.test.StepVerifier;
 
 import java.io.IOException;
 import java.util.List;
@@ -86,40 +86,45 @@ public class LocalContentStreamAdapterTests {
 	}
 
 	@Test
-	void loadContent_returnsContent() throws IOException {
+	void loadContent_returnsContent() {
 		Range range = new Range(0L, EARTH_SPINNING_FILE_SIZE / 2);
 		StreamContentRequest streamContentRequest = StreamContentRequest.builder()
 				.key(EARTH_SPINNING_VIDEO_KEY)
 				.range(range)
 				.build();
 
-		StreamedContent content = contentStreamAdapter.loadContent(streamContentRequest);
-
-		assertNotNull(content);
-		assertEquals(EARTH_SPINNING_VIDEO_KEY, content.getKey());
-		assertNotNull(content.getMetadata());
-		assertEquals(EARTH_SPINNING_VIDEO_KEY, content.getMetadata().getKey());
-		assertEquals(EARTH_SPINNING_CONTENT_TYPE, content.getMetadata().getContentType());
-		assertEquals(EARTH_SPINNING_FILE_SIZE, content.getMetadata().getFileSize());
-		assertEquals(range, content.getRange());
-		assertNotNull(content.getContent());
-		assertEquals(range.getEnd() - range.getStart() + 1, content.getContentLength());
+		StepVerifier.create(contentStreamAdapter.loadContent(streamContentRequest))
+				.assertNext(content -> {
+					assertNotNull(content);
+					assertEquals(EARTH_SPINNING_VIDEO_KEY, content.getKey());
+					assertNotNull(content.getMetadata());
+					assertEquals(EARTH_SPINNING_VIDEO_KEY, content.getMetadata().getKey());
+					assertEquals(EARTH_SPINNING_CONTENT_TYPE, content.getMetadata().getContentType());
+					assertEquals(EARTH_SPINNING_FILE_SIZE, content.getMetadata().getFileSize());
+					assertEquals(range, content.getRange());
+					assertNotNull(content.getContent());
+					assertEquals(range.getEnd() - range.getStart() + 1, content.getContentLength());
+				}).verifyComplete();
 	}
 
 	@Test
 	void loadContent_throwsMissingResourceException() {
-		assertThrows(MissingResourceException.class, () -> contentStreamAdapter.loadContent(StreamContentRequest.builder().key("missing-video.mp4").build()));
+		StreamContentRequest request = StreamContentRequest.builder().key("missing-video.mp4").build();
+
+		StepVerifier.create(contentStreamAdapter.loadContent(request))
+				.expectError(MissingResourceException.class)
+				.verify();
 	}
 
 	@Test
-	void loadContent_returnsMaxChunkSize() throws IOException {
+	void loadContent_returnsMaxChunkSize() {
 		StreamContentRequest contentRequest = new StreamContentRequest(PARK_VIDEO_KEY, new Range(0L, null));
-		StreamedContent content = contentStreamAdapter.loadContent(contentRequest);
 
-		long MAX_CHUNK_SIZE = 1024 * 1024L; // 1 MB
-
-		assertNotNull(content);
-		assertEquals(MAX_CHUNK_SIZE, content.getContentLength());
+		StepVerifier.create(contentStreamAdapter.loadContent(contentRequest))
+				.assertNext(content -> {
+					assertNotNull(content);
+					assertEquals(contentStreamAdapter.getMaxChunkSize(), content.getContentLength());
+				}).verifyComplete();
 	}
 
 }
